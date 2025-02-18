@@ -2,7 +2,7 @@ from .base_config import BaseConfig
 
 class LeggedRobotCfg(BaseConfig):
     class env:
-        num_envs = 4096
+        num_envs = 800
         num_observations = 48
         num_privileged_obs = None # if not None a priviledge_obs_buf will be returned by step() (critic obs for assymetric training). None is returned otherwise 
         num_actions = 12
@@ -12,6 +12,7 @@ class LeggedRobotCfg(BaseConfig):
         test = False
 
     class terrain:
+        evaluation_mode = False  # if True: evaluate the trained policy
         mesh_type = 'plane' # "heightfield" # none, plane, heightfield or trimesh
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
@@ -35,18 +36,28 @@ class LeggedRobotCfg(BaseConfig):
         terrain_proportions = [0.1, 0.1, 0.35, 0.25, 0.2]
         # trimesh only:
         slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
+        random_reset = True
+        dummy_normal = False
+        # measure_heights_in_sim = True
+        measure_heights_in_sim = False
+
 
     class commands:
         curriculum = False
         max_curriculum = 1.
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
-        heading_command = True # if true: compute ang vel command from heading error
+        heading_command = False # if true: compute ang vel command from heading error
+        # class ranges:
+        #     lin_vel_x = [-1.0, 1.0] # min max [m/s]
+        #     lin_vel_y = [-1.0, 1.0]   # min max [m/s]
+        #     ang_vel_yaw = [-1, 1]    # min max [rad/s]
+        #     heading = [-3.14, 3.14]
         class ranges:
-            lin_vel_x = [-1.0, 1.0] # min max [m/s]
-            lin_vel_y = [-1.0, 1.0]   # min max [m/s]
-            ang_vel_yaw = [-1, 1]    # min max [rad/s]
-            heading = [-3.14, 3.14]
+            lin_vel_x = [0.0, 0] # min max [m/s]
+            lin_vel_y = [0.0, 0]   # min max [m/s]
+            ang_vel_yaw = [0, 0]    # min max [rad/s]
+            heading = [0, 0]
 
     class init_state:
         pos = [0.0, 0.0, 1.] # x,y,z [m]
@@ -92,6 +103,8 @@ class LeggedRobotCfg(BaseConfig):
     class domain_rand:
         randomize_friction = True
         friction_range = [0.5, 1.25]
+        randomize_restitution = True
+        restitution_range = [0.0, 1.0]
         randomize_base_mass = False
         added_mass_range = [-1., 1.]
         push_robots = True
@@ -124,6 +137,11 @@ class LeggedRobotCfg(BaseConfig):
         base_height_target = 1.
         max_contact_force = 100. # forces above this value are penalized
 
+    class termination:
+        r_threshold = 0.5
+        p_threshold = 0.5
+        z_threshold = 0.6
+
     class normalization:
         class obs_scales:
             lin_vel = 2.0
@@ -131,12 +149,24 @@ class LeggedRobotCfg(BaseConfig):
             dof_pos = 1.0
             dof_vel = 0.05
             height_measurements = 5.0
+
+        class priv_obs_scales:
+            contact_state = 1.0
+            contact_force = 0.1
+            contact_normal = 1.0
+            friction = 1.0
+            restitution = 1.0
+            thigh_and_shank_contact_state = 30.0
+            external_wrench = 1.0
+            airtime = 3.0
         clip_observations = 100.
         clip_actions = 100.
 
     class noise:
         add_noise = True
         noise_level = 1.0 # scales other values
+        heights_downgrade_frequency = False  # heights sample rate: 10 Hz
+
         class noise_scales:
             dof_pos = 0.01
             dof_vel = 1.5
@@ -150,6 +180,8 @@ class LeggedRobotCfg(BaseConfig):
         ref_env = 0
         pos = [10, 0, 6]  # [m]
         lookat = [11., 5, 3.]  # [m]
+        debug_viz = False
+
 
     class sim:
         dt =  0.005
